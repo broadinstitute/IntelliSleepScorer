@@ -8,9 +8,10 @@ We have generated a Windows Executable for IntelliSleepScorer using PyInstaller.
 <a href="https://storage.googleapis.com/grins-public/LeiWang-20230208/IntelliSleepScorer.zip">IntelliSleepScorer Executable for Windows</a>
 
 You can also use the link below to download two example EDF files.
+
 <a href="https://storage.googleapis.com/grins-public/LeiWang-20230208/edf_examples.zip">Example EDF files</a>
 
-# Run IntelliSleepScorer using the sourcecode
+# Run IntelliSleepScorer using the source code
 
 If you are using Macbook or Linux machines, you can launch IntelliSleepScorer using the source code. Note that this repository does not include the "models" folder (due to size limit). You need to download the , unzip it, and copy the "models" folder inside the repositary. Otherwise, the software will crash due to missing model files.
 
