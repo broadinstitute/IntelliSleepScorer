@@ -3,12 +3,32 @@
 
 # Download Windows Excutable
 
-We have generated a Windows Excutable for IntelliSleepScorer using PyInstaller. Below is the download link.\n
+We have generated a Windows Excutable for IntelliSleepScorer using PyInstaller. Below is the download link.
 
-<a src="https://storage.googleapis.com/grins-public/LeiWang-20230208/IntelliSleepScorer.zip">IntelliSleepScorer Executable for Windows</a>\n
+<a src="https://storage.googleapis.com/grins-public/LeiWang-20230208/IntelliSleepScorer.zip">IntelliSleepScorer Executable for Windows</a>
 
-You can also use the link below to download two example EDF files.\n
+You can also use the link below to download two example EDF files.
 
 # Run IntelliSleepScorer using the sourcecode
 
 If you are using Macbook or Linux machines, you can launch IntelliSleepScorer using the source code. Note that this repository does not include the "models" folder (due to size limit). You need to download the , unzip it, and copy the "models" folder inside the repositary. Otherwise, the software will crash due to missing model files.
+
+# EDF/EDF+ format requirement
+
+IntelliSleepScorer uses <a src="">MNE-Python</a> package to read EDF/EDF+ files. Please follow the <a src="https://www.edfplus.info/specs/edf.html">stardard EDF/EDF+ specification </a> when generating the EDF/EDF+ files. In addition to the standard specification, IntelliSleepScorer has a few specific requirements:
+1. The EDF/EDF+ annotations must be encoded in UTF-8. Otherwise, the software will crash.
+2. If you use the LightGBM-2EEG model for scoring, Your EDF/EDF+ should have three channels organized in the following order: 1) an EEG channel recorded in the parietal area; 2) an EEG channel recorded in the frontal area; 3) an EMG channel. If you use LightGBM-1EEG model, Your EDF/EDF+ should have two channels organized in the following order: 1) an EEG channel; 2) an EMG channel.
+3. We have tested EDF/EDF+ files sampled 100-1000Hz with lengths up to 24 hours. We did not set any limits on the length of data stored in each channel or the total size of EDF/EDF+ that can be run. Depending on the specs of your PC,files larger than what we have tested may cause issues.
+
+# Workflow
+
+1. Launch IntelliSleepScorer using the Windows executable or the source code.
+2. Click "Select EDF/EDF+ File(s)" to select the files you want to score. If you selected any files by mistake, you can click the "Clear" button to clear the selected file list.
+3. By default, the sleep stages are encoded as Wake: 1, NREM: 2; REM: 3 in the output score files. The default epoch length is set at 10 sec. The current version (v1.1) of IntelliSleepScorer does not allow changing stage encodings or epoch length. These functionalities will be added in future releases.
+4. Select the model you want to use for sleep scoring.
+5. Click "Score All Files". IntelliSleepScorer will automatically score all the EDF/EDF+ files and calculate the global SHAP valuess (for interpreting the scoring decisions) in the list. During the scoring process, the following files will be generated and saved to the same folder where your EDF/EDF+ files are located.
+   1. "{EDF/EDF+ file name}_{model_name}_features.csv"; this file stores all the extracted feature values.
+   2. "{EDF/EDF+ file name}_scores.csv"; this file stores the predicted sleep stages.
+   3. "{EDF/EDF+ file name}_rs_100hz.npy"; this file stores a copy of the resampled/downsampled signals (100hz). To improve the speed of visualization, IntelliSleepScorer uses the downsampled signal instead of the original signal when plotting the signal.
+   4. "{EDF/EDF+ file name}_explainer.pickle"; "{EDF/EDF+ file name}_shap_500samples.pickle"; "{EDF/EDF+ file name}_indicies_500samples.npy"; these files will be used when plotting the global SHAP values and epoch-level SHAP values.
+6. After finishing the scoring process, you can click on "Visualize the Selected File" to visualize the EEG/EMG signals, a hypnogram time-aligned with the signals, and the global SHAP values. You can double click on any epoch to zoom in. Use the provided navigation buttons to move forward or backward. Right-click on an epoch to plot the epoch-level SHAP values.
