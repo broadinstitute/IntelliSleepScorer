@@ -1,0 +1,5 @@
+parameter,value
+Wake,1
+NREM,2
+REM,3
+epoch_length,10
