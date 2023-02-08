@@ -34,3 +34,15 @@ IntelliSleepScorer uses <a href="https://mne.tools/stable/index.html">MNE-Python
    3. "{EDF/EDF+ file name}_rs_100hz.npy"; this file stores a copy of the resampled/downsampled signals (100hz). To improve the speed of visualization, IntelliSleepScorer uses the downsampled signal instead of the original signal when plotting the signal.
    4. "{EDF/EDF+ file name}_explainer.pickle"; "{EDF/EDF+ file name}_shap_500samples.pickle"; "{EDF/EDF+ file name}_indicies_500samples.npy"; these files will be used when plotting the global SHAP values and epoch-level SHAP values.
 6. After finishing the scoring process, you can click on "Visualize the Selected File" to visualize the EEG/EMG signals, a hypnogram time-aligned with the signals, and the global SHAP values. You can double click on any epoch to zoom in. Use the provided navigation buttons to move forward or backward. Right-click on an epoch to plot the epoch-level SHAP values.
+
+# Contributors
+
+Lei A. Wang, Ryan Kern, Eunah Yu, Soonwook Choi, Jen Q Pan
+
+# Licensing
+
+IntelliSleepScorer software was released under the Creative Commons Attribution-NonCommercial-ShareAlike (CC-BY-NC-SA) license. It is free to academic users. For commercial use, please contact the authors for licenses.
+
+# Contact
+
+jpan@broadinstitute.org
