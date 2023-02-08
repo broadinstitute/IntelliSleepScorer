@@ -39,7 +39,7 @@ IntelliSleepScorer uses <a href="https://mne.tools/stable/index.html">MNE-Python
 
 Lei A. Wang, Ryan Kern, Eunah Yu, Soonwook Choi, Jen Q Pan
 
-# Licensing
+# License
 
 IntelliSleepScorer software was released under the Creative Commons Attribution-NonCommercial-ShareAlike (CC-BY-NC-SA) license. It is free to academic users. For commercial use, please contact the authors for licenses.
 
