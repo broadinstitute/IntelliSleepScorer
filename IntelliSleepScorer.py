@@ -3,6 +3,7 @@ import pandas as pd
 import sys
 import os
 import time
+import mne
 import joblib
 import seaborn as sns
 from PyQt5.QtWidgets import QInputDialog, QMainWindow, QApplication, QFileDialog
@@ -35,10 +36,10 @@ class Thread_run_all_files(QThread):
     
     def run(self):
         progress = 0
-        self.signal.emit([progress,f"Selected Model: {self.model_name}"])
+        self.signal.emit([progress,f"Selected Model: {self.model_name}.pkl"])
 
         self.num_files = len(self.filepath_list)
-        self.model = joblib.load(f"./models/{self.model_name}")
+        self.model = joblib.load(f"./models/{self.model_name}.pkl")
         df = pd.DataFrame()
         for index, filepath in enumerate(self.filepath_list):
 
@@ -51,19 +52,18 @@ class Thread_run_all_files(QThread):
             edfname = filepath.split("/")[-1]
             firstname = edfname.split('.edf')[0]
             folderpath = filepath.split(firstname)[0]
-            csv_file = firstname + "_" + self.model_name.split(".")[0] + "_features.csv"
+            csv_file = firstname + "_" + self.model_name + "_features.csv"
 
             if os.path.exists(f"{folderpath}{csv_file}"):
                 self.signal.emit([progress,f"--Feature file exists, skipped extracting features"])
             else:
                 self.signal.emit([progress,f"--Started extracting features"])
 
-                if self.model_name == "1_LightGBM-2EEG.pkl":
-                    message1 = save_single_edf_to_csv_2eeg(edf_filepath=filepath, model_name = self.model_name.split(".")[0])
-                if self.model_name == "2_LightGBM-1EEG.pkl":
-                    message1 = save_single_edf_to_csv_1eeg(edf_filepath=filepath, model_name = self.model_name.split(".")[0])
-                if self.model_name == "3_LogisticRegression-2EEG.pkl":
-                    message1 = save_single_edf_to_csv_2eeg(edf_filepath=filepath, model_name = self.model_name.split(".")[0])
+                if self.model_name == "1_LightGBM-2EEG":
+                    message1 = save_single_edf_to_csv_2eeg(edf_filepath=filepath, model_name = self.model_name)
+                if self.model_name == "2_LightGBM-1EEG":
+                    message1 = save_single_edf_to_csv_1eeg(edf_filepath=filepath, model_name = self.model_name)
+                
                 progress = (index+0.5)/self.num_files * 100
                 if message1 is not None:
                     self.signal.emit([progress,f"--{message1}"])
@@ -72,6 +72,7 @@ class Thread_run_all_files(QThread):
 
             df = pd.read_csv(f"{folderpath}{csv_file}")
             features = df.columns[1:-3].tolist()
+            print(features)
             df['score'] = df['score'].astype("float")
             X = df[features]   
             progress = (index+0.3)/self.num_files * 100
@@ -89,31 +90,30 @@ class Thread_run_all_files(QThread):
             })
             df_output["Stage_Code"] = df_output["Stage_Code"].astype("int")
             df_output["Stage"] = df_output["Stage_Code"].map(STAGE_CODE)
-            df_output.to_csv( f"{folderpath}{firstname}_scores.csv", index=False)
+            df_output.to_csv( f"{folderpath}{firstname}_{self.model_name}_scores.csv", index=False)
             progress = (index+0.6)/self.num_files * 100
-            self.signal.emit([progress,f"--Saved the score file at {folderpath}{firstname}_scores.csv"])
-#            except:
-#                print(f"Error: {filepath} cannot be scored")
-#                self.signal.emit([progress,f"--Error: {filepath} cannot be scored"])
-#                continue
-
+            self.signal.emit([progress,f"--Saved the score file at {folderpath}{firstname}_{self.model_name}_scores.csv"])
 
             ##
-            self.signal.emit([progress,f"--Calculating SHAP values"])
-            explainer, shap_values_500samples, indices_500samples = get_shap(df, features, model = self.model)
+            if self.model_name == "1_LightGBM-2EEG":
+                self.signal.emit([progress,f"--Calculating SHAP values"])
+                explainer, shap_values_500samples, indices_500samples = get_shap(df, features, model = self.model)
+                progress = (index+0.9)/self.num_files * 100
+                self.signal.emit([progress,f"--Finished calculating SHAP values"])
+                with open(f"{folderpath}{firstname}_{self.model_name}_explainer.pickle", 'wb') as handle:
+                    pickle.dump(explainer, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                
+                with open(f"{folderpath}{firstname}_{self.model_name}_shap_500samples.pickle", 'wb') as handle:
+                    pickle.dump(shap_values_500samples, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-            progress = (index+0.9)/self.num_files * 100
-            self.signal.emit([progress,f"--Finished calculating SHAP values"])
+                np.save(f"{folderpath}{firstname}_{self.model_name}_indicies_500samples.npy", indices_500samples)
 
-            with open(f"{folderpath}{firstname}_explainer.pickle", 'wb') as handle:
-                pickle.dump(explainer, handle, protocol=pickle.HIGHEST_PROTOCOL)
-            
-            with open(f"{folderpath}{firstname}_shap_500samples.pickle", 'wb') as handle:
-                pickle.dump(shap_values_500samples, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                self.signal.emit([progress,f"--Saved SHAP values at {folderpath}{firstname}_{self.model_name}_shap_500samples.pickle"])
 
-            np.save(f"{folderpath}{firstname}_indicies_500samples.npy", indices_500samples)
-
-            self.signal.emit([progress,f"--Saved SHAP values at {folderpath}{firstname}_shap_500samples.pickle"])            
+            if self.model_name == "2_LightGBM-1EEG":
+                self.signal.emit([progress,f"SHAP value is currently not implemented for LightGBM-1EEG; skipped calculating SHAP values."])
+                progress = (index+0.9)/self.num_files * 100
+                self.signal.emit([progress,f"--"])
 
             progress = (index+1)/self.num_files * 100
             elapsed_time = time.time() - starttime
@@ -140,8 +140,10 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.button_input_files.clicked.connect(self.update_file_list)
         self.button_clear_input.clicked.connect(self.clear)
         self.button_run.clicked.connect(self.run_all_files)
+        
+        self.combobox_models.currentIndexChanged.connect(self.update_plot_event)
 
-        self.button_plot.clicked.connect(self.plot_edf)
+        self.button_plot.clicked.connect(self.plot_edf_2eeg)
         self.listWidget_input.itemSelectionChanged.connect(self.selectionChanged)
 
         print(STAGE_CODE_REVERSE['Wake'])
@@ -181,6 +183,24 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         if self.num_files > 0:
             self.button_run.setEnabled(True)
     
+
+    def update_plot_event(self):
+        if str(self.combobox_models.currentText()).split(".")[0] == "1_LightGBM-2EEG":
+            try: self.button_plot.clicked.disconnect(self.plot_edf_1eeg)
+            except Exception: pass
+            try: self.button_plot.clicked.disconnect(self.plot_edf_2eeg)
+            except Exception: pass
+            self.button_plot.clicked.connect(self.plot_edf_2eeg)
+            print("1_LightGBM-2EEG")
+        if str(self.combobox_models.currentText()).split(".")[0] == "2_LightGBM-1EEG":
+            try: self.button_plot.clicked.disconnect(self.plot_edf_1eeg)
+            except Exception: pass
+            try: self.button_plot.clicked.disconnect(self.plot_edf_2eeg)
+            except Exception: pass
+            self.button_plot.clicked.connect(self.plot_edf_1eeg)
+            print("2_LightGBM-1EEG")
+
+
     def clear(self):
         self.progressBar.setProperty("value", 0)
         self.label_status.setText("")
@@ -189,6 +209,7 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.num_files = 0
         self.listWidget_input.clear()
         self.button_run.setEnabled(False)
+
 
     @pyqtSlot("PyQt_PyObject")
     def update_progress(self, emitted_signal):
@@ -201,7 +222,8 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
             self.button_input_files.setEnabled(True)
             self.button_clear_input.setEnabled(True)
             self.label_status.setText("Done")
-    
+
+
     def run_all_files(self):
         self.button_run.setEnabled(False)
         self.button_input_files.setEnabled(False)
@@ -209,15 +231,19 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.label_status.setText("Processing...")
 
         self.thread_run.filepath_list = self.filepath_list
-        self.thread_run.model_name = str(self.combobox_models.currentText())
+        self.thread_run.model_name = str(self.combobox_models.currentText()).split(".")[0]
         self.thread_run.start()
 
-    def selectionChanged(self):
-        print("Selected items: ", self.listWidget_input.selectedItems()[0].text())
-        self.button_plot.setEnabled(True)
 
-    def plot_edf(self):
-        print("start plotting")
+    def selectionChanged(self):
+        if self.listWidget_input.count() > 0:
+            self.button_plot.setEnabled(True)
+
+
+    def plot_edf_2eeg(self):
+        print("start plottinng lightgbm-2EEG")
+
+        model_name = str(self.combobox_models.currentText()).split(".")[0]
 
         self.figure.clf()
         self.canvas.draw()
@@ -230,21 +256,21 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.map_stages = {1:"Wake", 2:"NREM", 3:"REM"}
 
         edf_path = self.listWidget_input.selectedItems()[0].text()
-        model_name = str(self.combobox_models.currentText()).split(".")[0]
-        feature_file_path = edf_path.replace(".edf", "_" + model_name + "_features.csv")
-        eeg_100zh_path = edf_path.replace(".edf", "_rs_100hz.npy")
-        score_file_path = edf_path.replace(".edf", "_scores.csv")
-        explaner_path = edf_path.replace(".edf", "_explainer.pickle")
-        shap_500samples_path = edf_path.replace(".edf", "_shap_500samples.pickle")
-        indicies_500samples_path = edf_path.replace(".edf", "_indicies_500samples.npy")
+        
+        feature_file_path = edf_path.replace(".edf", f"_{model_name}_features.csv")
+        eeg_100zh_path = edf_path.replace(".edf", f"_{model_name}_rs_100hz.npy")
+        score_file_path = edf_path.replace(".edf", f"_{model_name}_scores.csv")
+        explaner_path = edf_path.replace(".edf", f"_{model_name}_explainer.pickle")
+        shap_500samples_path = edf_path.replace(".edf", f"_{model_name}_shap_500samples.pickle")
+        indicies_500samples_path = edf_path.replace(".edf", f"_{model_name}_indicies_500samples.npy")
 
         eeg_100hz = np.load(eeg_100zh_path)
+        n_channels = eeg_100hz.shape[0]
+        print("n_channels: ", n_channels)
         df_scores = pd.read_csv(score_file_path)
         scores = df_scores["Stage_Code"].values
-        # stages = df_scores["Stage"].values
         map_colors = {1: "orange", 2: "blue", 3: "red"}
         color_epochs = [map_colors[e] for e in scores]
-        # color_data_points = [e for e in color_epochs for i in range(1000)]
 
         self.n_epochs = len(scores)
         n_epochs_display = self.get_n_epochs_display()
@@ -254,69 +280,54 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         time_epochs_start = np.arange(0, self.max_time, self.epoch_length)
         time_epochs_end = time_epochs_start + self.epoch_length
         
-        time_epochs_center = time_epochs_start + 5
+        n_axes = n_channels + 1
 
-        ax1 = self.figure.add_subplot(4,1,2)
+        ax1 = self.figure.add_subplot(n_axes,1,2)
         ax1.plot(time_sec, eeg_100hz[0])
-        # y_epoch_line = ax1.get_ylim()[1]*0.8
-        # y_epoch_lines = [y_epoch_line] * len(time_epochs_start)
-        # ax1.set_xticks(range(0, len(eeg_100hz[0])//100, n_epochs_display))
         ax1.get_xaxis().set_visible(False)
         ax1.spines['top'].set_visible(False)
         ax1.spines['right'].set_visible(False)
         ax1.spines['bottom'].set_visible(False)
-
         self.epoch_start = 0
         ax1.set_xlim(self.epoch_start,self.epoch_length*n_epochs_display)
 
-        ax2 = self.figure.add_subplot(4,1,3, sharex=ax1)
+        ax2 = self.figure.add_subplot(n_axes,1,3, sharex=ax1)
         ax2.plot(time_sec, eeg_100hz[1])
-        # ax2.scatter(time_min, eeg_100hz[1], c=color_data_points)
-        # ax2.plot(time_epochs_start, y_epoch_lines, "o", markersize=3, color="black")
-        # ax2.hlines(y_epoch_lines, time_epochs_start, time_epochs_end, colors=color_epochs, linewidths=2)
         ax2.get_xaxis().set_visible(False)
         ax2.spines['top'].set_visible(False)
         ax2.spines['right'].set_visible(False)
         ax2.spines['bottom'].set_visible(False)
 
-        ax3 = self.figure.add_subplot(4,1,4, sharex=ax1)
+        ax3 = self.figure.add_subplot(n_axes,1,4, sharex=ax1)
         ax3.plot(time_sec, eeg_100hz[2])
         ax3.set_xlabel("Time (sec)")
-        # ax3.plot(time_epochs_start, y_epoch_lines, "o", markersize=3, color="black")
-        # ax3.hlines(y_epoch_lines, time_epochs_start, time_epochs_end, colors=color_epochs, linewidths=2)
-        # ax3.get_xaxis().set_visible(False)
         ax3.spines['top'].set_visible(False)
         ax3.spines['right'].set_visible(False)
         ax3.spines['bottom'].set_visible(False)
 
-        ax4 = self.figure.add_subplot(4,1,1, sharex=ax1)
-        ax4.plot(time_epochs_start, scores, "|", markersize=7, color="black")
-        ax4.hlines(scores, time_epochs_start, time_epochs_end, colors=color_epochs, linewidths=3)
-        ax4.set_yticks([1,2,3])
-        ax4.set_yticklabels(["Wake", "NREM", "REM"])
-        ax4.get_xaxis().set_visible(False)
-        # ax4.get_yaxis().set_visible(False)
-        ax4.spines['top'].set_visible(False)
-        # ax4.spines['left'].set_visible(False)
-        ax4.spines['right'].set_visible(False)
-        ax4.spines['bottom'].set_visible(False)
+        ax_hypnogram = self.figure.add_subplot(n_axes,1,1, sharex=ax1)
+        ax_hypnogram.plot(time_epochs_start, scores, "|", markersize=7, color="black")
+        ax_hypnogram.hlines(scores, time_epochs_start, time_epochs_end, colors=color_epochs, linewidths=3)
+        ax_hypnogram.set_yticks([1,2,3])
+        ax_hypnogram.set_yticklabels(["Wake", "NREM", "REM"])
+        ax_hypnogram.get_xaxis().set_visible(False)
+        ax_hypnogram.spines['top'].set_visible(False)
+        ax_hypnogram.spines['right'].set_visible(False)
+        ax_hypnogram.spines['bottom'].set_visible(False)
 
-        def onclick(event):
+        def onclick_lightgbm(event):
             print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
                 ('double' if event.dblclick else 'single', event.button,
                 event.x, event.y, event.xdata, event.ydata))
 
-            if event.dblclick:
-                display_n_epochs_list = [100, 10, 5, 3, 2, 1]
-                n_epochs_display_current = self.get_n_epochs_display()
-                index_n_epochs_display = 1 + next(
-                    (i for i,x in enumerate(display_n_epochs_list) if x < n_epochs_display_current))
-                self.epoch_start = int(event.xdata//self.epoch_length)
-                self.combobox_select_n_epochs.setCurrentIndex(index_n_epochs_display)
-                # self.figure.axes[0].set_xlim(self.epoch_length*self.epoch_start, self.epoch_length*(self.epoch_start + n_epochs_display) )
-                # self.update_epoch_labels(n_epochs_display)
-                # self.canvas.draw()
-                    
+            # if event.dblclick:
+            #     display_n_epochs_list = [100, 10, 5, 3, 2, 1]
+            #     n_epochs_display_current = self.get_n_epochs_display()
+            #     index_n_epochs_display = 1 + next(
+            #         (i for i,x in enumerate(display_n_epochs_list) if x < n_epochs_display_current))
+            #     self.epoch_start = int(event.xdata//self.epoch_length)
+            #     self.combobox_select_n_epochs.setCurrentIndex(index_n_epochs_display)
+
             if event.button==3:
                 self.figure_shap_epoch.clf()
                 
@@ -329,11 +340,20 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
 
                 try:
                     self.highlight_selection1.remove()
-                    self.highlight_selection2.remove()
-                    self.highlight_selection3.remove()
-                    self.highlight_selection4.remove()
                 except:
                     print("highlight_selection1 not found")
+                try:
+                    self.highlight_selection2.remove()
+                except:
+                    print("highlight_selection2 not found")
+                try:
+                    self.highlight_selection3.remove()
+                except:
+                    print("highlight_selection3 not found")
+                try:
+                    self.highlight_selection4.remove()
+                except:
+                    print("highlight_selection4 not found")
 
                 self.highlight_selection1 = self.figure.axes[0].hlines(
                     0,
@@ -347,15 +367,14 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
                     0,
                     self.epoch_index_shap*self.epoch_length, (self.epoch_index_shap+1)*self.epoch_length,
                     colors="pink", linewidths=100, alpha=0.4)
-                self.highlight_selection4 = self.figure.axes[3].hlines(
-                    0,
-                    self.epoch_index_shap*self.epoch_length, (self.epoch_index_shap+1)*self.epoch_length,
-                    colors="pink", linewidths=100, alpha=0.4)
-
+                if n_channels == 3:
+                    self.highlight_selection4 = self.figure.axes[3].hlines(
+                        0,
+                        self.epoch_index_shap*self.epoch_length, (self.epoch_index_shap+1)*self.epoch_length,
+                        colors="pink", linewidths=100, alpha=0.4)
                 self.canvas.draw()
-
-        cid = self.canvas.mpl_connect('button_press_event', onclick)
-
+        
+        cid = self.canvas.mpl_connect('button_press_event', onclick_lightgbm)
         self.canvas.draw()
         print("finished plotting traces")
 
@@ -377,6 +396,95 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
 
         df_500samples = df.loc[indicies_500samples,]
         self.plot_shap_global(shap_values_500samples, df_500samples, indicies_500samples)
+
+        # Enable the buttons
+        self.combobox_select_n_epochs.setEnabled(True)
+        self.button_goto_epoch.setEnabled(True)
+        self.button_previous.setEnabled(True)
+        self.button_previous_more.setEnabled(True)
+        self.button_next.setEnabled(True)
+        self.button_next_more.setEnabled(True)
+
+
+    def plot_edf_1eeg(self):
+        print("start plotting lightgbm-1EEG")
+
+        model_name = str(self.combobox_models.currentText()).split(".")[0]
+
+        message = "--SHAP values are currently not implemented for LightGBM-1EEG model;"
+        self.textbox.appendPlainText(f"{message}\n")
+        message = "--Will not show SHAP values"
+        self.textbox.appendPlainText(f"{message}\n")
+            
+        self.figure.clf()
+        self.canvas.draw()
+        self.figure_shap_global.clf()
+        self.canvas_shap_global.draw()
+        self.figure_shap_epoch.clf()
+        self.canvas_shap_epoch.draw()
+
+        self.epoch_length = int(10)
+        self.map_stages = {1:"Wake", 2:"NREM", 3:"REM"}
+
+        edf_path = self.listWidget_input.selectedItems()[0].text()
+        
+        eeg_100zh_path = edf_path.replace(".edf", f"_{model_name}_rs_100hz.npy")
+        score_file_path = edf_path.replace(".edf", f"_{model_name}_scores.csv")
+        
+        eeg_100hz = np.load(eeg_100zh_path)
+        n_channels = eeg_100hz.shape[0]
+        print("n_channels: ", n_channels)
+        df_scores = pd.read_csv(score_file_path)
+        scores = df_scores["Stage_Code"].values
+        map_colors = {1: "orange", 2: "blue", 3: "red"}
+        color_epochs = [map_colors[e] for e in scores]
+
+        self.n_epochs = len(scores)
+        n_epochs_display = self.get_n_epochs_display()
+
+        self.max_time = int(len(eeg_100hz[0])/100)   # 100hz sampling frequency
+        time_sec = np.arange(0, self.max_time, 0.01)
+        time_epochs_start = np.arange(0, self.max_time, self.epoch_length)
+        time_epochs_end = time_epochs_start + self.epoch_length
+    
+        n_axes = n_channels + 1
+
+        ax1 = self.figure.add_subplot(n_axes,1,2)
+        ax1.plot(time_sec, eeg_100hz[0])
+        ax1.get_xaxis().set_visible(False)
+        ax1.spines['top'].set_visible(False)
+        ax1.spines['right'].set_visible(False)
+        ax1.spines['bottom'].set_visible(False)
+        self.epoch_start = 0
+        ax1.set_xlim(self.epoch_start,self.epoch_length*n_epochs_display)
+
+        ax2 = self.figure.add_subplot(n_axes,1,3, sharex=ax1)
+        ax2.plot(time_sec, eeg_100hz[1])
+        ax2.get_xaxis().set_visible(False)
+        ax2.spines['top'].set_visible(False)
+        ax2.spines['right'].set_visible(False)
+        ax2.spines['bottom'].set_visible(False)
+
+        if n_channels == 3:
+            ax3 = self.figure.add_subplot(n_axes,1,4, sharex=ax1)
+            ax3.plot(time_sec, eeg_100hz[2])
+            ax3.set_xlabel("Time (sec)")
+            ax3.spines['top'].set_visible(False)
+            ax3.spines['right'].set_visible(False)
+            ax3.spines['bottom'].set_visible(False)
+
+        ax_hypnogram = self.figure.add_subplot(n_axes,1,1, sharex=ax1)
+        ax_hypnogram.plot(time_epochs_start, scores, "|", markersize=7, color="black")
+        ax_hypnogram.hlines(scores, time_epochs_start, time_epochs_end, colors=color_epochs, linewidths=3)
+        ax_hypnogram.set_yticks([1,2,3])
+        ax_hypnogram.set_yticklabels(["Wake", "NREM", "REM"])
+        ax_hypnogram.get_xaxis().set_visible(False)
+        ax_hypnogram.spines['top'].set_visible(False)
+        ax_hypnogram.spines['right'].set_visible(False)
+        ax_hypnogram.spines['bottom'].set_visible(False)
+
+        self.canvas.draw()
+        print("finished plotting traces")
 
         # Enable the buttons
         self.combobox_select_n_epochs.setEnabled(True)
@@ -539,6 +647,7 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
 
         self.canvas_shap_epoch.draw()
 
+
     def get_n_epochs_display(self):
         n_epochs_display = 10
         selected_n_epochs = self.combobox_select_n_epochs.currentText()
@@ -548,20 +657,24 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
             n_epochs_display = int(selected_n_epochs)
         return n_epochs_display
 
+
     def update_display_goto_epoch(self):
         n_epochs_display = self.get_n_epochs_display()
 
         self.epoch_start, done = QInputDialog.getInt(
            self, 'Input Dialog', 'Enter the Epoch You Want to View:')
 
-        self.figure.axes[0].set_xlim(self.epoch_length*self.epoch_start, self.epoch_length*(self.epoch_start + n_epochs_display) )
+        self.figure.axes[0].set_xlim(self.epoch_length*self.epoch_start, self.epoch_length*(self.epoch_start + n_epochs_display))
+        self.update_epoch_labels(n_epochs_display)
         self.canvas.draw()
+
 
     def update_display_n_epochs(self):
         n_epochs_display = self.get_n_epochs_display()
-        self.figure.axes[0].set_xlim(self.epoch_length*self.epoch_start, self.epoch_length*(self.epoch_start + n_epochs_display) )
+        self.figure.axes[0].set_xlim(self.epoch_length*self.epoch_start, self.epoch_length*(self.epoch_start + n_epochs_display))
         self.update_epoch_labels(n_epochs_display)
         self.canvas.draw()
+
 
     def update_epoch_labels(self, n_epochs_display):
         if n_epochs_display < 100:
@@ -583,13 +696,15 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
                     self.epochlabels[i].remove()
             except:
                 print("No Epoch labels")
-            
+
+
     def update_display_previous(self):
         n_epochs_display = self.get_n_epochs_display()
         self.epoch_start -= 1
         self.figure.axes[0].set_xlim(self.epoch_length*self.epoch_start, self.epoch_length*(self.epoch_start + n_epochs_display) )
         self.update_epoch_labels(n_epochs_display)
         self.canvas.draw()
+
 
     def update_display_previous_more(self):
         n_epochs_display = self.get_n_epochs_display()
@@ -598,12 +713,14 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.update_epoch_labels(n_epochs_display)
         self.canvas.draw()
 
+
     def update_display_next(self):
         n_epochs_display = self.get_n_epochs_display()
         self.epoch_start += 1
         self.figure.axes[0].set_xlim(self.epoch_length*self.epoch_start, self.epoch_length*(self.epoch_start + n_epochs_display) )
         self.update_epoch_labels(n_epochs_display)
         self.canvas.draw()
+
 
     def update_display_next_more(self):
         n_epochs_display = self.get_n_epochs_display()

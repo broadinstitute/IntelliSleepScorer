@@ -126,7 +126,7 @@ class Ui_MainWindow(object):
         self.label_plot = QLabel()
         self.label_plot.setStyleSheet("font: 10pt;")
         self.label_plot.setWordWrap(True)
-        self.label_plot.setText("Double click on the plot to zoom in. Right click on an epoch to plot its SHAP values. Be patient, it may take a few seconds to update the plots.")
+        self.label_plot.setText("Right click on an epoch to plot its SHAP values (only for LighGBM-2EEG). Be patient, it may take a few seconds to update the plots.")
 
         self.figure = plt.figure(layout="constrained")
         self.canvas = FigureCanvasQTAgg(self.figure)
