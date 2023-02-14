@@ -3,8 +3,8 @@
 
 # Download the Windows Executable
 
-We have generated a Windows Executable for IntelliSleepScorer using PyInstaller. Below is the download link.
-
+We have generated a Windows Executable for IntelliSleepScorer using PyInstaller. Below are the download links.
+<a href="https://storage.googleapis.com/grins-public/LeiWang-20230208/IntelliSleepScorer%20v1.1.1.zip">IntelliSleepScorer v1.1.1 for Windows</a>
 <a href="https://storage.googleapis.com/grins-public/LeiWang-20230208/IntelliSleepScorer.zip">IntelliSleepScorer v1.1 for Windows</a>
 
 Users of MacOS or Linux, please use the source code to launch IntelliSleepScorer.
