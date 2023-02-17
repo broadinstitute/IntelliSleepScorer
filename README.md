@@ -50,4 +50,5 @@ IntelliSleepScorer software was released under the Creative Commons Attribution-
 
 # Contact
 
-jpan@broadinstitute.org
+Lei A. Wang: wangl@broadinstitute.org
+Jen Q. Pan: jpan@broadinstitute.org
