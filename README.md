@@ -18,7 +18,7 @@ You can use the link below to download two example EDF files.
 
 # Run IntelliSleepScorer using the source code
 
-If you are using Macbook or Linux machines, you can launch IntelliSleepScorer using the source code. Note that this repository does not include the "models" folder (due to size limit). You need to download the <a href="https://storage.googleapis.com/grins-public/LeiWang-20230208/models.zip">models.zip</a>, unzip it, and copy the "models" folder inside the repositary. Otherwise, the software will crash due to missing model files.
+If you are using Macbook or Linux machines, you can launch IntelliSleepScorer using the source code. Note that this repository does not include the "models" folder (due to size limit). You need to download <a href="https://storage.googleapis.com/grins-public/LeiWang-20230208/models.zip">models.zip</a>, unzip it, and copy the "models" folder inside the repositary. Otherwise, the software will crash due to missing model files.
 
 # EDF/EDF+ format requirement
 
