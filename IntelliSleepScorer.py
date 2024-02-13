@@ -516,95 +516,87 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.canvas.draw()
         print("finished plotting traces")
 
-        def onclick_lightgbm(event):
-            print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
-                ('double' if event.dblclick else 'single', event.button,
-                event.x, event.y, event.xdata, event.ydata))
+        # def onclick_lightgbm(event):
+        #     print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
+        #         ('double' if event.dblclick else 'single', event.button,
+        #         event.x, event.y, event.xdata, event.ydata))
             
-            # if event.dblclick:
-            #     display_n_epochs_list = [100, 10, 5, 3, 2, 1]
-            #     n_epochs_display_current = self.get_n_epochs_display()
-            #     index_n_epochs_display = 1 + next(
-            #         (i for i,x in enumerate(display_n_epochs_list) if x < n_epochs_display_current))
-            #     self.epoch_start = int(event.xdata//self.epoch_length)
-            #     self.combobox_select_n_epochs.setCurrentIndex(index_n_epochs_display)
+        #     # if event.dblclick:
+        #     #     display_n_epochs_list = [100, 10, 5, 3, 2, 1]
+        #     #     n_epochs_display_current = self.get_n_epochs_display()
+        #     #     index_n_epochs_display = 1 + next(
+        #     #         (i for i,x in enumerate(display_n_epochs_list) if x < n_epochs_display_current))
+        #     #     self.epoch_start = int(event.xdata//self.epoch_length)
+        #     #     self.combobox_select_n_epochs.setCurrentIndex(index_n_epochs_display)
 
-            if event.button==3:
-                self.figure_shap_epoch.clf()
+        #     if event.button==3:
+        #         self.figure_shap_epoch.clf()
                 
-                self.epoch_index_shap = int(event.xdata//self.epoch_length)
-                print("self.epoch_index_shap: ", self.epoch_index_shap)
+        #         self.epoch_index_shap = int(event.xdata//self.epoch_length)
+        #         print("self.epoch_index_shap: ", self.epoch_index_shap)
 
-                x = X.loc[[self.epoch_index_shap],:]
-                shap_values_x = explainer.shap_values(x)
-                self.plot_shap_epoch(shap_values_x)
+        #         x = X.loc[[self.epoch_index_shap],:]
+        #         shap_values_x = explainer.shap_values(x)
+        #         self.plot_shap_epoch(shap_values_x)
 
-                try:
-                    self.highlight_selection1.remove()
-                except:
-                    print("highlight_selection1 not found")
-                try:
-                    self.highlight_selection2.remove()
-                except:
-                    print("highlight_selection2 not found")
-                try:
-                    self.highlight_selection3.remove()
-                except:
-                    print("highlight_selection3 not found")
-                try:
-                    self.highlight_selection4.remove()
-                except:
-                    print("highlight_selection4 not found")
+        #         try:
+        #             self.highlight_selection1.remove()
+        #         except:
+        #             print("highlight_selection1 not found")
+        #         try:
+        #             self.highlight_selection2.remove()
+        #         except:
+        #             print("highlight_selection2 not found")
+        #         try:
+        #             self.highlight_selection3.remove()
+        #         except:
+        #             print("highlight_selection3 not found")
+        #         try:
+        #             self.highlight_selection4.remove()
+        #         except:
+        #             print("highlight_selection4 not found")
 
-                self.highlight_selection1 = self.figure.axes[0].hlines(
-                    0,
-                    self.epoch_index_shap*self.epoch_length, (self.epoch_index_shap+1)*self.epoch_length,
-                    colors="pink", linewidths=100, alpha=0.4)
-                self.highlight_selection2 = self.figure.axes[1].hlines(
-                    0,
-                    self.epoch_index_shap*self.epoch_length, (self.epoch_index_shap+1)*self.epoch_length,
-                    colors="pink", linewidths=100, alpha=0.4)
-                self.highlight_selection3 = self.figure.axes[2].hlines(
-                    0,
-                    self.epoch_index_shap*self.epoch_length, (self.epoch_index_shap+1)*self.epoch_length,
-                    colors="pink", linewidths=100, alpha=0.4)
-                if n_channels == 3:
-                    self.highlight_selection4 = self.figure.axes[3].hlines(
-                        0,
-                        self.epoch_index_shap*self.epoch_length, (self.epoch_index_shap+1)*self.epoch_length,
-                        colors="pink", linewidths=100, alpha=0.4)
-                self.canvas.draw()
+        #         self.highlight_selection1 = self.figure.axes[0].hlines(
+        #             0,
+        #             self.epoch_index_shap*self.epoch_length, (self.epoch_index_shap+1)*self.epoch_length,
+        #             colors="pink", linewidths=100, alpha=0.4)
+        #         self.highlight_selection2 = self.figure.axes[1].hlines(
+        #             0,
+        #             self.epoch_index_shap*self.epoch_length, (self.epoch_index_shap+1)*self.epoch_length,
+        #             colors="pink", linewidths=100, alpha=0.4)
+        #         self.highlight_selection3 = self.figure.axes[2].hlines(
+        #             0,
+        #             self.epoch_index_shap*self.epoch_length, (self.epoch_index_shap+1)*self.epoch_length,
+        #             colors="pink", linewidths=100, alpha=0.4)
+        #         if n_channels == 3:
+        #             self.highlight_selection4 = self.figure.axes[3].hlines(
+        #                 0,
+        #                 self.epoch_index_shap*self.epoch_length, (self.epoch_index_shap+1)*self.epoch_length,
+        #                 colors="pink", linewidths=100, alpha=0.4)
+        #         self.canvas.draw()
         
-        cid = self.canvas.mpl_connect('button_press_event', onclick_lightgbm)
-        self.canvas.draw()
-        print("finished plotting traces")
+        # cid = self.canvas.mpl_connect('button_press_event', onclick_lightgbm)
+        # self.canvas.draw()
+        # print("finished plotting traces")
 
-        ## Plot global SHAP values
-        df = pd.read_csv(feature_file_path)
-        df_scores = pd.read_csv(score_file_path)
+        # ## Plot global SHAP values
+        # df = pd.read_csv(feature_file_path)
+        # df_scores = pd.read_csv(score_file_path)
 
-        self.features = df.columns[1:-3].tolist()
-        df['score'] = df_scores['Stage_Code'].astype("float")
-        X = df[self.features]
+        # self.features = df.columns[1:-3].tolist()
+        # df['score'] = df_scores['Stage_Code'].astype("float")
+        # X = df[self.features]
 
-        with open(explaner_path, 'rb') as handle:
-            explainer = pickle.load(handle)
+        # with open(explaner_path, 'rb') as handle:
+        #     explainer = pickle.load(handle)
 
-        with open(shap_500samples_path, 'rb') as handle:
-            shap_values_500samples = pickle.load(handle)
+        # with open(shap_500samples_path, 'rb') as handle:
+        #     shap_values_500samples = pickle.load(handle)
 
-        indicies_500samples = np.load(indicies_500samples_path).tolist()
+        # indicies_500samples = np.load(indicies_500samples_path).tolist()
 
-        df_500samples = df.loc[indicies_500samples,]
-        self.plot_shap_global(shap_values_500samples, df_500samples, indicies_500samples)
-
-        # Enable the buttons
-        self.combobox_select_n_epochs.setEnabled(True)
-        self.button_goto_epoch.setEnabled(True)
-        self.button_previous.setEnabled(True)
-        self.button_previous_more.setEnabled(True)
-        self.button_next.setEnabled(True)
-        self.button_next_more.setEnabled(True)
+        # df_500samples = df.loc[indicies_500samples,]
+        # self.plot_shap_global(shap_values_500samples, df_500samples, indicies_500samples)
 
         # Enable the buttons
         self.combobox_select_n_epochs.setEnabled(True)
