@@ -1,3 +1,6 @@
+from matplotlib import pyplot as plt
+from matplotlib.lines import Line2D
+import variable
 import numpy as np
 import pandas as pd
 import sys
@@ -35,6 +38,7 @@ class Thread_run_all_files(QThread):
         self.model_name = None
     
     def run(self):
+
         progress = 0
         self.signal.emit([progress,f"Selected Model: {self.model_name}.pkl"])
 
@@ -94,26 +98,38 @@ class Thread_run_all_files(QThread):
             progress = (index+0.6)/self.num_files * 100
             self.signal.emit([progress,f"--Saved the score file at {folderpath}{firstname}_{self.model_name}_scores.csv"])
 
+            if variable.run_SHAP is True:
             ##
-            if self.model_name == "1_LightGBM-2EEG":
-                self.signal.emit([progress,f"--Calculating SHAP values"])
-                explainer, shap_values_500samples, indices_500samples = get_shap(df, features, model = self.model)
-                progress = (index+0.9)/self.num_files * 100
-                self.signal.emit([progress,f"--Finished calculating SHAP values"])
-                with open(f"{folderpath}{firstname}_{self.model_name}_explainer.pickle", 'wb') as handle:
-                    pickle.dump(explainer, handle, protocol=pickle.HIGHEST_PROTOCOL)
-                
-                with open(f"{folderpath}{firstname}_{self.model_name}_shap_500samples.pickle", 'wb') as handle:
-                    pickle.dump(shap_values_500samples, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                if self.model_name == "1_LightGBM-2EEG":
+                    self.signal.emit([progress,f"--Calculating SHAP values"])
+                    explainer, shap_values_500samples, indices_500samples = get_shap(df, features, model = self.model)
+                    progress = (index+0.9)/self.num_files * 100
+                    self.signal.emit([progress,f"--Finished calculating SHAP values"])
+                    with open(f"{folderpath}{firstname}_{self.model_name}_explainer.pickle", 'wb') as handle:
+                        pickle.dump(explainer, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                    
+                    with open(f"{folderpath}{firstname}_{self.model_name}_shap_500samples.pickle", 'wb') as handle:
+                        pickle.dump(shap_values_500samples, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-                np.save(f"{folderpath}{firstname}_{self.model_name}_indicies_500samples.npy", indices_500samples)
+                    np.save(f"{folderpath}{firstname}_{self.model_name}_indicies_500samples.npy", indices_500samples)
 
-                self.signal.emit([progress,f"--Saved SHAP values at {folderpath}{firstname}_{self.model_name}_shap_500samples.pickle"])
+                    self.signal.emit([progress,f"--Saved SHAP values at {folderpath}{firstname}_{self.model_name}_shap_500samples.pickle"])
 
-            if self.model_name == "2_LightGBM-1EEG":
-                self.signal.emit([progress,f"SHAP value is currently not implemented for LightGBM-1EEG; skipped calculating SHAP values."])
-                progress = (index+0.9)/self.num_files * 100
-                self.signal.emit([progress,f"--"])
+                if self.model_name == "2_LightGBM-1EEG":
+                    self.signal.emit([progress,f"--Calculating SHAP values"])
+                    explainer, shap_values_500samples, indices_500samples = get_shap(df, features, model = self.model)
+                    progress = (index+0.9)/self.num_files * 100
+                    self.signal.emit([progress,f"--Finished calculating SHAP values"])
+                    with open(f"{folderpath}{firstname}_{self.model_name}_explainer.pickle", 'wb') as handle:
+                        pickle.dump(explainer, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                    
+                    with open(f"{folderpath}{firstname}_{self.model_name}_shap_500samples.pickle", 'wb') as handle:
+                        pickle.dump(shap_values_500samples, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+                    np.save(f"{folderpath}{firstname}_{self.model_name}_indicies_500samples.npy", indices_500samples)
+
+                    self.signal.emit([progress,f"--Saved SHAP values at {folderpath}{firstname}_{self.model_name}_shap_500samples.pickle"])
+            
 
             progress = (index+1)/self.num_files * 100
             elapsed_time = time.time() - starttime
@@ -144,7 +160,10 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.combobox_models.currentIndexChanged.connect(self.update_plot_event)
 
         self.button_plot.clicked.connect(self.plot_edf_2eeg)
+        self.button_plot.clicked.connect(self.plot_edf_1eeg) 
         self.listWidget_input.itemSelectionChanged.connect(self.selectionChanged)
+        
+        self.checkbox.stateChanged.connect(self.checkbox_for_running_SHAP)
 
         print(STAGE_CODE_REVERSE['Wake'])
         self.label_wake_code.setText( f"Wake: {STAGE_CODE_REVERSE['Wake']}" )
@@ -163,6 +182,13 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         models = sorted(models)
         for model in models:
             self.combobox_models.addItem(model)
+
+    def checkbox_for_running_SHAP(self, state):
+        if state == 2:  # state 2 corresponds to checked state
+            variable.run_SHAP = True
+        else:
+            variable.run_SHAP = False  # Reset to default background color
+        #(50,50)
 
     def update_file_list(self):
         added_filepath_list = QFileDialog.getOpenFileNames(
@@ -291,6 +317,10 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.epoch_start = 0
         ax1.set_xlim(self.epoch_start,self.epoch_length*n_epochs_display)
 
+        raw = read_raw_edf(edf_path,preload=False)
+        ch_names = raw.ch_names
+        ax1.set_ylabel(ch_names[0],rotation=0,fontsize=8,ha="right")
+
         ax2 = self.figure.add_subplot(n_axes,1,3, sharex=ax1)
         ax2.plot(time_sec, eeg_100hz[1])
         ax2.get_xaxis().set_visible(False)
@@ -298,12 +328,16 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         ax2.spines['right'].set_visible(False)
         ax2.spines['bottom'].set_visible(False)
 
+        ax2.set_ylabel(ch_names[1],rotation=0,fontsize=8,ha="right")
+
         ax3 = self.figure.add_subplot(n_axes,1,4, sharex=ax1)
         ax3.plot(time_sec, eeg_100hz[2])
         ax3.set_xlabel("Time (sec)")
         ax3.spines['top'].set_visible(False)
         ax3.spines['right'].set_visible(False)
         ax3.spines['bottom'].set_visible(False)
+
+        ax3.set_ylabel(ch_names[2],rotation=0,fontsize=8,ha="right")
 
         ax_hypnogram = self.figure.add_subplot(n_axes,1,1, sharex=ax1)
         ax_hypnogram.plot(time_epochs_start, scores, "|", markersize=7, color="black")
@@ -457,6 +491,9 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         ax1.spines['bottom'].set_visible(False)
         self.epoch_start = 0
         ax1.set_xlim(self.epoch_start,self.epoch_length*n_epochs_display)
+        raw = read_raw_edf(edf_path,preload=False)
+        ch_names = raw.ch_names
+        ax1.set_ylabel('EEG',rotation=0,fontsize=8,ha="right")
 
         ax2 = self.figure.add_subplot(n_axes,1,3, sharex=ax1)
         ax2.plot(time_sec, eeg_100hz[1])
@@ -464,14 +501,7 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         ax2.spines['top'].set_visible(False)
         ax2.spines['right'].set_visible(False)
         ax2.spines['bottom'].set_visible(False)
-
-        if n_channels == 3:
-            ax3 = self.figure.add_subplot(n_axes,1,4, sharex=ax1)
-            ax3.plot(time_sec, eeg_100hz[2])
-            ax3.set_xlabel("Time (sec)")
-            ax3.spines['top'].set_visible(False)
-            ax3.spines['right'].set_visible(False)
-            ax3.spines['bottom'].set_visible(False)
+        ax2.set_ylabel('EMG',rotation=0,fontsize=8,ha="right")
 
         ax_hypnogram = self.figure.add_subplot(n_axes,1,1, sharex=ax1)
         ax_hypnogram.plot(time_epochs_start, scores, "|", markersize=7, color="black")
@@ -482,9 +512,91 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         ax_hypnogram.spines['top'].set_visible(False)
         ax_hypnogram.spines['right'].set_visible(False)
         ax_hypnogram.spines['bottom'].set_visible(False)
-
+        
         self.canvas.draw()
         print("finished plotting traces")
+
+        def onclick_lightgbm(event):
+            print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
+                ('double' if event.dblclick else 'single', event.button,
+                event.x, event.y, event.xdata, event.ydata))
+            
+            # if event.dblclick:
+            #     display_n_epochs_list = [100, 10, 5, 3, 2, 1]
+            #     n_epochs_display_current = self.get_n_epochs_display()
+            #     index_n_epochs_display = 1 + next(
+            #         (i for i,x in enumerate(display_n_epochs_list) if x < n_epochs_display_current))
+            #     self.epoch_start = int(event.xdata//self.epoch_length)
+            #     self.combobox_select_n_epochs.setCurrentIndex(index_n_epochs_display)
+
+            if event.button==3:
+                self.figure_shap_epoch.clf()
+                
+                self.epoch_index_shap = int(event.xdata//self.epoch_length)
+                print("self.epoch_index_shap: ", self.epoch_index_shap)
+
+                x = X.loc[[self.epoch_index_shap],:]
+                shap_values_x = explainer.shap_values(x)
+                self.plot_shap_epoch(shap_values_x)
+
+                try:
+                    self.highlight_selection1.remove()
+                except:
+                    print("highlight_selection1 not found")
+                try:
+                    self.highlight_selection2.remove()
+                except:
+                    print("highlight_selection2 not found")
+                try:
+                    self.highlight_selection3.remove()
+                except:
+                    print("highlight_selection3 not found")
+                try:
+                    self.highlight_selection4.remove()
+                except:
+                    print("highlight_selection4 not found")
+
+                self.highlight_selection1 = self.figure.axes[0].hlines(
+                    0,
+                    self.epoch_index_shap*self.epoch_length, (self.epoch_index_shap+1)*self.epoch_length,
+                    colors="pink", linewidths=100, alpha=0.4)
+                self.highlight_selection2 = self.figure.axes[1].hlines(
+                    0,
+                    self.epoch_index_shap*self.epoch_length, (self.epoch_index_shap+1)*self.epoch_length,
+                    colors="pink", linewidths=100, alpha=0.4)
+                self.highlight_selection3 = self.figure.axes[2].hlines(
+                    0,
+                    self.epoch_index_shap*self.epoch_length, (self.epoch_index_shap+1)*self.epoch_length,
+                    colors="pink", linewidths=100, alpha=0.4)
+                if n_channels == 3:
+                    self.highlight_selection4 = self.figure.axes[3].hlines(
+                        0,
+                        self.epoch_index_shap*self.epoch_length, (self.epoch_index_shap+1)*self.epoch_length,
+                        colors="pink", linewidths=100, alpha=0.4)
+                self.canvas.draw()
+        
+        cid = self.canvas.mpl_connect('button_press_event', onclick_lightgbm)
+        self.canvas.draw()
+        print("finished plotting traces")
+
+        ## Plot global SHAP values
+        df = pd.read_csv(feature_file_path)
+        df_scores = pd.read_csv(score_file_path)
+
+        self.features = df.columns[1:-3].tolist()
+        df['score'] = df_scores['Stage_Code'].astype("float")
+        X = df[self.features]
+
+        with open(explaner_path, 'rb') as handle:
+            explainer = pickle.load(handle)
+
+        with open(shap_500samples_path, 'rb') as handle:
+            shap_values_500samples = pickle.load(handle)
+
+        indicies_500samples = np.load(indicies_500samples_path).tolist()
+
+        df_500samples = df.loc[indicies_500samples,]
+        self.plot_shap_global(shap_values_500samples, df_500samples, indicies_500samples)
 
         # Enable the buttons
         self.combobox_select_n_epochs.setEnabled(True)
@@ -494,6 +606,13 @@ class MyMainWindow(QMainWindow, Ui_MainWindow):
         self.button_next.setEnabled(True)
         self.button_next_more.setEnabled(True)
 
+        # Enable the buttons
+        self.combobox_select_n_epochs.setEnabled(True)
+        self.button_goto_epoch.setEnabled(True)
+        self.button_previous.setEnabled(True)
+        self.button_previous_more.setEnabled(True)
+        self.button_next.setEnabled(True)
+        self.button_next_more.setEnabled(True)
 
     def plot_shap_global(self, shap_values_500samples, df_500samples, indicies_500samples):
         

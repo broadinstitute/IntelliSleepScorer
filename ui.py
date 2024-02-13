@@ -9,7 +9,7 @@
 
 from PyQt5.QtWidgets import QWidget, QPushButton, QListWidget, \
     QProgressBar, QLabel, QComboBox, QPlainTextEdit, QSizePolicy,\
-    QGridLayout
+    QGridLayout, QCheckBox
 from PyQt5.QtCore import QRect, QMetaObject
 from PyQt5.QtGui import QIcon
 
@@ -82,7 +82,7 @@ class Ui_MainWindow(object):
 
 
         self.listWidget_input = QListWidget(self)
-        self.listWidget_input.setGeometry(QRect(40, 180, 340, 300))
+        self.listWidget_input.setGeometry(QRect(40, 180, 340, 270))
         self.listWidget_input.setObjectName("listWidget_input")
 
         self.progressBar = QProgressBar(self)
@@ -112,10 +112,13 @@ class Ui_MainWindow(object):
         self.button_plot.setText("Visualize the Selected File")
         self.button_plot.setEnabled(False)
 
+        self.checkbox = QCheckBox('RunSHAP', self)
+        self.checkbox.stateChanged.connect(self.checkbox_for_running_SHAP)
+        self.checkbox.move(75,450)
         
         # log
         self.textbox = QPlainTextEdit(self)
-        self.textbox.setStyleSheet("font: 8pt;")
+        self.textbox.setStyleSheet("font: 10pt;")
         self.textbox.setGeometry(QRect(40, 660, 340, 320))
 
 
@@ -126,7 +129,7 @@ class Ui_MainWindow(object):
         self.label_plot = QLabel()
         self.label_plot.setStyleSheet("font: 10pt;")
         self.label_plot.setWordWrap(True)
-        self.label_plot.setText("Right click on an epoch to plot its SHAP values (only for LighGBM-2EEG). Be patient, it may take a few seconds to update the plots.")
+        self.label_plot.setText("Right click on an epoch to plot its SHAP values (LighGBM-2EEG only). Be patient, it takes a few seconds to update the plots.")
 
         self.figure = plt.figure(layout="constrained")
         self.canvas = FigureCanvasQTAgg(self.figure)
@@ -189,7 +192,7 @@ class Ui_MainWindow(object):
         self.canvas_shap_epoch = FigureCanvasQTAgg(self.figure_shap_epoch)
 
         self.label_shap_epoch = QLabel()
-        self.label_shap_epoch.setStyleSheet("font: 10pt;")
+        self.label_shap_epoch.setStyleSheet("font: 9pt;")
         self.label_shap_epoch.setWordWrap(True)
         self.label_shap_epoch.setText("Top 10 features with the highest absolute SHAP values for the selected epoch. Positive SHAP values indicate positive contribution to the prediction, and vice versa. If in the WAKE SHAP plot, you see a positive SHAP_Wake value for the feature 'emg_abs_max', it indicates that the 'emg_abs_max' value from the selected epoch increases the likelihood of the selected epoch being scored as Wake. Note that SHAP value only explains why the model makes the decision, it doesn't evaluate whether the decision is correct or not.")
 
@@ -197,7 +200,7 @@ class Ui_MainWindow(object):
         self.canvas_shap_global = FigureCanvasQTAgg(self.figure_shap_global)
 
         self.label_shap_global = QLabel()
-        self.label_shap_global.setStyleSheet("font: 10pt;")
+        self.label_shap_global.setStyleSheet("font: 9pt;")
         self.label_shap_global.setWordWrap(True)
         self.label_shap_global.setText("Top 10 features with the highest absolute Global SHAP values (calculated from 500 randomly sampled epochs). SHAP value shows how much a feature affected the prediction. Positive SHAP values indicate positive contribution to the prediction, and vice versa. Samples with redder color have higher feature values. Here is an example on how to interpret the plots. If in the WAKE SHAP plot, you see more redder dots on the right side of feature 'emg_abs_max' (more positive SHAP), it indicates that in general higher 'emg_abs_max' increases the likelihood of being scored as Wake. Note that SHAP value only explains why the model makes the decision, it doesn't evaluate whether the decision is correct or not.")
 
