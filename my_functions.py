@@ -13,7 +13,7 @@ def printW (string):
     f.close()
 
 
-def cut_epochs (full_single_trace, sfreq, epoch_len = 10):
+def cut_epochs (full_single_trace, sfreq, epoch_len = None):
     epoch_length = (epoch_len * sfreq)
     n_epochs = len(full_single_trace) // epoch_length
     output = np.zeros((n_epochs,epoch_length))
@@ -25,7 +25,7 @@ def cut_epochs (full_single_trace, sfreq, epoch_len = 10):
     return output
 
 
-def get_epoch_abs_mean (full_single_trace, sfreq, epoch_len = 10):
+def get_epoch_abs_mean (full_single_trace, sfreq, epoch_len = None):
     epoch_length = (epoch_len * sfreq)
     n_epochs = len(full_single_trace) // epoch_length
     output = np.zeros(n_epochs)
@@ -37,7 +37,7 @@ def get_epoch_abs_mean (full_single_trace, sfreq, epoch_len = 10):
     return output
 
 
-def get_epoch_abs_median (full_single_trace, sfreq, epoch_len = 10):
+def get_epoch_abs_median (full_single_trace, sfreq, epoch_len = None):
     epoch_length = (epoch_len * sfreq)
     n_epochs = len(full_single_trace) // epoch_length
     output = np.zeros(n_epochs)
@@ -49,7 +49,7 @@ def get_epoch_abs_median (full_single_trace, sfreq, epoch_len = 10):
     return output
 
 
-def get_epoch_abs_max (full_single_trace, sfreq, epoch_len = 10):
+def get_epoch_abs_max (full_single_trace, sfreq, epoch_len = None):
     epoch_length = (epoch_len * sfreq)
     n_epochs = len(full_single_trace) // epoch_length
     output = np.zeros(n_epochs)
@@ -61,7 +61,7 @@ def get_epoch_abs_max (full_single_trace, sfreq, epoch_len = 10):
     return output
 
 
-def get_epoch_abs_std (full_single_trace, sfreq, epoch_len = 10):
+def get_epoch_abs_std (full_single_trace, sfreq, epoch_len = None):
     epoch_length = (epoch_len * sfreq)
     n_epochs = len(full_single_trace) // epoch_length
     output = np.zeros(n_epochs)
@@ -73,7 +73,7 @@ def get_epoch_abs_std (full_single_trace, sfreq, epoch_len = 10):
     return output
 
 
-def get_epoch_psd (full_single_trace, sfreq, epoch_len = 10):
+def get_epoch_psd (full_single_trace, sfreq, epoch_len = None):
     epoch_length = (epoch_len * sfreq)
     n_epochs = len(full_single_trace) // epoch_length
     output = np.zeros((6, n_epochs))
@@ -123,7 +123,7 @@ def rmsValue(arr):
     return root 
 
 
-def get_epoch_rms (full_single_trace, sfreq, epoch_len = 10):
+def get_epoch_rms (full_single_trace, sfreq, epoch_len = None):
     epoch_length = (epoch_len * sfreq)
     n_epochs = len(full_single_trace) // epoch_length
     output = np.zeros(n_epochs)
@@ -181,7 +181,7 @@ def remove_outlier(df_input):
 
 
 
-def save_single_edf_to_csv_2eeg(edf_filepath=None, epoch_len=10, model_name=None, test_run=False, include_score=False):
+def save_single_edf_to_csv_2eeg(edf_filepath=None, epoch_len=None, model_name=None, test_run=False, include_score=False):
     file_firstname = edf_filepath.split("/")[-1].split('.edf')[0]
     edf_folderpath = edf_filepath.split(file_firstname)[0]
     
@@ -208,9 +208,12 @@ def save_single_edf_to_csv_2eeg(edf_filepath=None, epoch_len=10, model_name=None
     raw_data_length = raw.get_data().shape[1]
     sfreq = int(raw.info["sfreq"])
 
+    with open(f"{edf_folderpath}{file_firstname}_ch_names.pickle", 'wb') as fp:
+        pickle.dump(raw.ch_names, fp)
+
     if include_score:
         print("raw_data_shape", raw_data_length)
-        if raw_data_length != len(score_list) * 10 * sfreq:
+        if raw_data_length != len(score_list) * epoch_len * sfreq:
             print("score list and raw data have different number of epochs")
             return
     if test_run:
@@ -570,10 +573,10 @@ def save_single_edf_to_csv_2eeg(edf_filepath=None, epoch_len=10, model_name=None
     df['epoch_id'] = file_firstname + '___' + df.index.astype('str')
     df['subject_id'] = file_firstname
     df['score'] = score_list
-    df.to_csv(edf_folderpath + file_firstname + "_" + model_name + '_features.csv')
-    
+    df.to_csv(f"{edf_folderpath}{file_firstname}_{model_name}_epoch_length_{epoch_len}_sec_features.csv")
 
-def save_single_edf_to_csv_1eeg(edf_filepath=None, epoch_len=10, model_name=None, test_run=False, include_score=False):
+
+def save_single_edf_to_csv_1eeg(edf_filepath=None, epoch_len=None, model_name=None, test_run=False, include_score=False):
     file_firstname = edf_filepath.split("/")[-1].split('.edf')[0]
     edf_folderpath = edf_filepath.split(file_firstname)[0]
 
@@ -600,9 +603,12 @@ def save_single_edf_to_csv_1eeg(edf_filepath=None, epoch_len=10, model_name=None
     raw_data_length = raw.get_data().shape[1]
     sfreq = int(raw.info["sfreq"])
 
+    with open(f"{edf_folderpath}{file_firstname}_ch_names.pickle", 'wb') as fp:
+        pickle.dump(raw.ch_names, fp)
+
     if include_score:
         print("raw_data_shape", raw_data_length)
-        if raw_data_length != len(score_list) * 10 * sfreq:
+        if raw_data_length != len(score_list) * epoch_len * sfreq:
             print("score list and raw data have different number of epochs")
             return
     if test_run:
@@ -823,7 +829,7 @@ def save_single_edf_to_csv_1eeg(edf_filepath=None, epoch_len=10, model_name=None
     df['epoch_id'] = file_firstname + '___' + df.index.astype('str')
     df['subject_id'] = file_firstname
     df['score'] = score_list
-    df.to_csv(edf_folderpath + file_firstname + "_" + model_name + '_features.csv')
+    df.to_csv(f"{edf_folderpath}{file_firstname}_{model_name}_epoch_length_{epoch_len}_sec_features.csv")
     
 
 def make_prediction (X, y_truth, model):
@@ -837,6 +843,7 @@ def make_prediction (X, y_truth, model):
     report = classification_report(y_truth, y_prediction)
     printW(report)
     return y_prediction
+
 
 def get_shap (df, features, model):
     explainer = shap.TreeExplainer(model)

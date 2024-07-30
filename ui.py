@@ -1,15 +1,6 @@
-# -*- coding: utf-8 -*-
-
-# Form implementation generated from reading ui file 'ABFbot_ui.ui'
-#
-# Created by: PyQt5 UI code generator 5.13.0
-#
-# WARNING! All changes made in this file will be lost!
-
-
 from PyQt5.QtWidgets import QWidget, QPushButton, QListWidget, \
     QProgressBar, QLabel, QComboBox, QPlainTextEdit, QSizePolicy,\
-    QGridLayout, QCheckBox
+    QGridLayout, QCheckBox, QLineEdit
 from PyQt5.QtCore import QRect, QMetaObject
 from PyQt5.QtGui import QIcon
 
@@ -29,7 +20,7 @@ class Ui_MainWindow(object):
         MainWindow.setFixedSize(1600, 1000)
         MainWindow.setWindowIcon(QIcon('logo.png'))
 
-        MainWindow.setWindowTitle("IntelliSleepScorer v1.1")
+        MainWindow.setWindowTitle("IntelliSleepScorer v1.2")
 
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -65,11 +56,24 @@ class Ui_MainWindow(object):
         self.label_rem_code.setStyleSheet("font: 10pt;")
         self.label_rem_code.setText("REM:")
 
-        self.label_epoch_length = QLabel(self)
-        self.label_epoch_length.setGeometry(QRect(220, 80, 160, 20))
-        self.label_epoch_length.setStyleSheet("font: 10pt;")
-        self.label_epoch_length.setText("Epoch Length:")
+        self.label_epoch_length_pre_text = QLabel(self)
+        self.label_epoch_length_pre_text.setGeometry(QRect(220, 80, 90, 20))
+        self.label_epoch_length_pre_text.setStyleSheet("font: 10pt;")
+        self.label_epoch_length_pre_text.setText("Epoch Length:")
 
+        self.combobox_epoch_length = QComboBox(self)
+        self.combobox_epoch_length.setGeometry(QRect(310, 80, 40, 20))
+        self.combobox_epoch_length.setStyleSheet("font: 10pt;")
+        # self.combobox_epoch_length.setInputMask("00")
+        self.combobox_epoch_length.addItem("4")
+        self.combobox_epoch_length.addItem("10")
+        self.combobox_epoch_length.addItem("20")
+
+
+        self.label_epoch_length_post_text = QLabel(self)
+        self.label_epoch_length_post_text.setGeometry(QRect(360, 80, 40, 20))
+        self.label_epoch_length_post_text.setStyleSheet("font: 10pt;")
+        self.label_epoch_length_post_text.setText("sec")
 
         # Select Model
         self.label_select_model = QLabel(self)
@@ -84,6 +88,14 @@ class Ui_MainWindow(object):
         self.listWidget_input = QListWidget(self)
         self.listWidget_input.setGeometry(QRect(40, 180, 340, 270))
         self.listWidget_input.setObjectName("listWidget_input")
+        self.listWidget_input
+
+        self.ListWidget_warning = QLabel(self)
+        self.ListWidget_warning.setGeometry(QRect(50, 260, 340, 270))
+        self.ListWidget_warning.setStyleSheet("font: 10pt;")
+        self.ListWidget_warning.setStyleSheet("color:red")
+        self.ListWidget_warning.setWordWrap(True)
+        #self.ListWidget_warning.setText("**Score file again if you change epoch length before Visualizing the Selected File**")
 
         self.progressBar = QProgressBar(self)
         self.progressBar.setGeometry(QRect(40, 500, 340, 20))
@@ -112,15 +124,13 @@ class Ui_MainWindow(object):
         self.button_plot.setText("Visualize the Selected File")
         self.button_plot.setEnabled(False)
 
-        self.checkbox = QCheckBox('RunSHAP', self)
-        self.checkbox.stateChanged.connect(self.checkbox_for_running_SHAP)
-        self.checkbox.move(75,450)
+        self.checkbox_run_shap = QCheckBox('Run/Plot SHAP (not supported for 2_LightGBM-1EEG)', self)
+        self.checkbox_run_shap.setGeometry(QRect(40, 450, 340, 40))
         
         # log
         self.textbox = QPlainTextEdit(self)
         self.textbox.setStyleSheet("font: 10pt;")
         self.textbox.setGeometry(QRect(40, 660, 340, 320))
-
 
         # Set right pane
         layout_right_pane = QGridLayout()
@@ -159,6 +169,19 @@ class Ui_MainWindow(object):
         self.button_goto_epoch.setText("Go to Epoch")
         self.button_goto_epoch.setEnabled(False)
 
+
+        # Display the stage of the selected epoch
+        self.label_selected_epoch_stage = QLabel()
+        self.label_selected_epoch_stage.setGeometry(QRect(0, 0, 200, 40))
+        self.label_selected_epoch_stage.setStyleSheet("font: 10pt;")
+        self.label_selected_epoch_stage.setText("Stage of selected epoch")
+        self.combobox_selected_epoch_stage = QComboBox()
+        self.combobox_selected_epoch_stage.setGeometry(QRect(200, 0, 200, 40))
+        self.combobox_selected_epoch_stage.addItem("None")
+        self.combobox_selected_epoch_stage.addItem("Wake")
+        self.combobox_selected_epoch_stage.addItem("NREM")
+        self.combobox_selected_epoch_stage.addItem("REM")
+        self.combobox_selected_epoch_stage.setEnabled(False)
 
         self.button_previous = QPushButton(self)
         # self.button_previous.setGeometry(QRect(220, 540, 160, 40))
@@ -206,17 +229,19 @@ class Ui_MainWindow(object):
 
         layout_right_pane.addWidget(self.label_select_number_epochs, 0, 0, 1, 1)
         layout_right_pane.addWidget(self.combobox_select_n_epochs, 0, 1, 1, 1)
-        layout_right_pane.addWidget(self.button_goto_epoch, 0, 2, 1, 1)
-        layout_right_pane.addWidget(self.button_previous_more, 0, 3, 1, 1)
-        layout_right_pane.addWidget(self.button_previous, 0, 4, 1, 1)
-        layout_right_pane.addWidget(self.button_next, 0, 5, 1, 1)
-        layout_right_pane.addWidget(self.button_next_more, 0, 6, 1, 1)
-        layout_right_pane.addWidget(self.label_plot, 1, 0, 1, 7)
-        layout_right_pane.addWidget(self.canvas, 2, 0, 1, 7)
-        layout_right_pane.addWidget(self.canvas_shap_epoch, 3, 0, 1, 7)
-        layout_right_pane.addWidget(self.label_shap_epoch, 4, 0, 1, 7)
-        layout_right_pane.addWidget(self.canvas_shap_global, 5, 0, 1, 7)
-        layout_right_pane.addWidget(self.label_shap_global, 6, 0, 1, 7)
+        layout_right_pane.addWidget(self.label_selected_epoch_stage, 0, 2, 1, 1)
+        layout_right_pane.addWidget(self.combobox_selected_epoch_stage, 0, 3, 1, 1)
+        layout_right_pane.addWidget(self.button_goto_epoch, 0, 4, 1, 1)
+        layout_right_pane.addWidget(self.button_previous_more, 0, 5, 1, 1)
+        layout_right_pane.addWidget(self.button_previous, 0, 6, 1, 1)
+        layout_right_pane.addWidget(self.button_next, 0, 7, 1, 1)
+        layout_right_pane.addWidget(self.button_next_more, 0, 8, 1, 1)
+        layout_right_pane.addWidget(self.label_plot, 1, 0, 1, 9)
+        layout_right_pane.addWidget(self.canvas, 2, 0, 1, 9)
+        layout_right_pane.addWidget(self.canvas_shap_epoch, 3, 0, 1, 9)
+        layout_right_pane.addWidget(self.label_shap_epoch, 4, 0, 1, 9)
+        layout_right_pane.addWidget(self.canvas_shap_global, 5, 0, 1, 9)
+        layout_right_pane.addWidget(self.label_shap_global, 6, 0, 1, 9)
 
 
         self.right_pane = QWidget(self)
