@@ -5,6 +5,8 @@
 
 We have generated a Windows Executable for IntelliSleepScorer using PyInstaller. Below are the download links.
 
+<a href="https://storage.googleapis.com/broad_sc_trx_jp_public/IntelliSleepScorer-wangl/IntelliSleepScorer-v.1.2.zip">IntelliSleepScorer v1.2 for Windows</a>
+
 <a href="https://storage.googleapis.com/grins-public/LeiWang-20230208/IntelliSleepScorer%20v1.1.1.zip">IntelliSleepScorer v1.1.1 for Windows</a>
 
 <a href="https://storage.googleapis.com/grins-public/LeiWang-20230208/IntelliSleepScorer.zip">IntelliSleepScorer v1.1 for Windows</a>
